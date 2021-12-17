@@ -27,13 +27,8 @@ router.get("/:contactId", async (req, res, next) => {
 
     if (!contact) {
       throw new NotFound();
-      // const error = new Error("Not found");
-      // error.status = 404;
-      // throw error;
-      // return res.status(404).json({
-      //   message: "Not found",
-      // });
     }
+
     res.json(contact);
   } catch (error) {
     next(error);
@@ -59,9 +54,11 @@ router.delete("/:contactId", async (req, res, next) => {
   try {
     const { contactId } = req.params;
     const deleteContact = await contactsOperations.removeContact(contactId);
+
     if (!deleteContact) {
       throw new NotFound();
     }
+
     res.json({ message: "contact deleted" });
   } catch (error) {
     next(error);
@@ -85,6 +82,7 @@ router.put("/:contactId", async (req, res, next) => {
     if (!updateContact) {
       throw new NotFound();
     }
+
     res.json(updateContact);
   } catch (error) {
     next(error);
