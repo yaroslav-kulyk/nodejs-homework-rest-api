@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const Joi = require("joi");
 const { NotFound, BadRequest } = require("http-errors");
 const { Contact, joiSchema } = require("../../model/contact");
 
@@ -48,21 +49,6 @@ router.post("/", async (req, res, next) => {
   }
 });
 
-router.delete("/:contactId", async (req, res, next) => {
-  try {
-    const { contactId } = req.params;
-    const deleteContact = await Contact.findByIdAndRemove(contactId);
-
-    if (!deleteContact) {
-      throw new NotFound();
-    }
-
-    res.json({ message: "contact deleted" });
-  } catch (error) {
-    next(error);
-  }
-});
-
 router.put("/:contactId", async (req, res, next) => {
   try {
     const { contactId } = req.params;
@@ -74,8 +60,8 @@ router.put("/:contactId", async (req, res, next) => {
 
     res.json(updateContact);
   } catch (error) {
-    if (error.message.includes("Cast to Boolean failed")) {
-      error.status = 400;
+    if (error.message.includes("Cast to ObjectId failed")) {
+      error.status = 404;
     }
     if (error.message.includes("validation failed")) {
       error.status = 400;
@@ -87,6 +73,15 @@ router.put("/:contactId", async (req, res, next) => {
 
 router.patch("/:contactId/favorite", async (req, res, next) => {
   try {
+    const { error } = Joi.object({ favorite: Joi.boolean().required() }).validate(req.body);
+
+    if (error && error.message === '"favorite" must be a boolean') {
+      throw new BadRequest(error.message);
+    }
+    if (error) {
+      throw new BadRequest("missing field favorite");
+    }
+
     const { contactId } = req.params;
     const { favorite } = req.body;
 
@@ -98,8 +93,29 @@ router.patch("/:contactId/favorite", async (req, res, next) => {
 
     res.json(updateContact);
   } catch (error) {
+    if (error.message.includes("Cast to ObjectId failed")) {
+      error.status = 404;
+    }
     if (error.message.includes("Cast to Boolean failed")) {
       error.status = 400;
+    }
+    next(error);
+  }
+});
+
+router.delete("/:contactId", async (req, res, next) => {
+  try {
+    const { contactId } = req.params;
+    const deleteContact = await Contact.findByIdAndRemove(contactId);
+
+    if (!deleteContact) {
+      throw new NotFound();
+    }
+
+    res.json({ message: "contact deleted" });
+  } catch (error) {
+    if (error.message.includes("Cast to ObjectId failed")) {
+      error.status = 404;
     }
     next(error);
   }
