@@ -3,10 +3,12 @@ const router = express.Router();
 const Joi = require("joi");
 const { NotFound, BadRequest } = require("http-errors");
 const { Contact, joiSchema } = require("../../model/contact");
+const authenticate = require("../../middlewares/authenticate");
 
-router.get("/", async (req, res, next) => {
+router.get("/", authenticate, async (req, res, next) => {
   try {
-    const contacts = await Contact.find();
+    const { _id } = req.user;
+    const contacts = await Contact.find({ owner: _id }, "-createdAt, -updatedAt");
     res.json(contacts);
   } catch (error) {
     next(error);
@@ -31,7 +33,7 @@ router.get("/:contactId", async (req, res, next) => {
   }
 });
 
-router.post("/", async (req, res, next) => {
+router.post("/", authenticate, async (req, res, next) => {
   try {
     const { error } = joiSchema.validate(req.body);
 
@@ -39,7 +41,8 @@ router.post("/", async (req, res, next) => {
       throw new BadRequest("missing fields");
     }
 
-    const newContact = await Contact.create(req.body);
+    const { _id } = req.user;
+    const newContact = await Contact.create({ ...req.body, owner: _id });
     res.status(201).json(newContact);
   } catch (error) {
     if (error.message.includes("validation failed")) {
