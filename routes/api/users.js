@@ -1,8 +1,8 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const { BadRequest, Conflict, Unauthorized } = require("http-errors");
-const { User, joiSchema } = require("../../model/user");
+const { BadRequest, Conflict, Unauthorized, NotFound } = require("http-errors");
+const { User, joiSchema, joiSubscriptionSchema } = require("../../model/user");
 const authenticate = require("../../middlewares/authenticate");
 
 const router = express.Router();
@@ -29,6 +29,7 @@ router.post("/signup", async (req, res, next) => {
     res.status(201).json({
       user: {
         email: newUser.email,
+        subscription: newUser.subscription,
       },
     });
   } catch (error) {
@@ -81,10 +82,47 @@ router.get("/current", authenticate, async (req, res) => {
   const { email, subscription } = req.user;
   res.json({
     user: {
-      subscription,
       email,
+      subscription,
     },
   });
+});
+
+router.patch("/", authenticate, async (req, res, next) => {
+  try {
+    const { error } = joiSubscriptionSchema.validate(req.body);
+    if (error) {
+      throw new BadRequest(error.message);
+    }
+
+    const { _id, email } = req.user;
+    const { subscription } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      _id,
+      { subscription },
+      {
+        new: true,
+        fields: "subscription",
+      }
+    );
+
+    if (!user) {
+      throw new NotFound();
+    }
+
+    res.json({
+      user: {
+        email,
+        subscription,
+      },
+    });
+  } catch (error) {
+    if (error.message.includes("Cast to ObjectId failed")) {
+      error.status = 404;
+    }
+    next(error);
+  }
 });
 
 module.exports = router;

@@ -1,24 +1,35 @@
 const express = require("express");
 const router = express.Router();
-const Joi = require("joi");
 const { NotFound, BadRequest } = require("http-errors");
-const { Contact, joiSchema } = require("../../model/contact");
+const { Contact, joiSchema, joiFavoriteSchema } = require("../../model/contact");
 const authenticate = require("../../middlewares/authenticate");
 
 router.get("/", authenticate, async (req, res, next) => {
   try {
     const { _id } = req.user;
-    const contacts = await Contact.find({ owner: _id }, "-createdAt, -updatedAt");
+
+    if (req.query?.favorite) {
+      const { favorite } = req.query;
+      const filteredContacts = await Contact.find(
+        { owner: _id, favorite },
+        "-createdAt -updatedAt"
+      );
+      res.json(filteredContacts);
+      return;
+    }
+
+    const contacts = await Contact.find({ owner: _id }, "-createdAt -updatedAt");
     res.json(contacts);
   } catch (error) {
     next(error);
   }
 });
 
-router.get("/:contactId", async (req, res, next) => {
+router.get("/:contactId", authenticate, async (req, res, next) => {
   try {
+    const { _id } = req.user;
     const { contactId } = req.params;
-    const contact = await Contact.findById(contactId);
+    const contact = await Contact.findOne({ owner: _id, _id: contactId }, "-createdAt -updatedAt");
 
     if (!contact) {
       throw new NotFound();
@@ -52,10 +63,14 @@ router.post("/", authenticate, async (req, res, next) => {
   }
 });
 
-router.put("/:contactId", async (req, res, next) => {
+router.put("/:contactId", authenticate, async (req, res, next) => {
   try {
+    const { _id } = req.user;
     const { contactId } = req.params;
-    const updateContact = await Contact.findByIdAndUpdate(contactId, req.body, { new: true });
+    const updateContact = await Contact.findOneAndUpdate({ owner: _id, _id: contactId }, req.body, {
+      new: true,
+      fields: "-createdAt -updatedAt",
+    });
 
     if (!updateContact) {
       throw new NotFound();
@@ -74,21 +89,25 @@ router.put("/:contactId", async (req, res, next) => {
   }
 });
 
-router.patch("/:contactId/favorite", async (req, res, next) => {
+router.patch("/:contactId/favorite", authenticate, async (req, res, next) => {
   try {
-    const { error } = Joi.object({ favorite: Joi.boolean().required() }).validate(req.body);
-
-    if (error && error.message === '"favorite" must be a boolean') {
+    const { error } = joiFavoriteSchema.validate(req.body);
+    if (error) {
       throw new BadRequest(error.message);
     }
-    if (error) {
-      throw new BadRequest("missing field favorite");
-    }
 
+    const { _id } = req.user;
     const { contactId } = req.params;
     const { favorite } = req.body;
 
-    const updateContact = await Contact.findByIdAndUpdate(contactId, { favorite }, { new: true });
+    const updateContact = await Contact.findOneAndUpdate(
+      { owner: _id, _id: contactId },
+      { favorite },
+      {
+        new: true,
+        fields: "-createdAt -updatedAt",
+      }
+    );
 
     if (!updateContact) {
       throw new NotFound();
@@ -106,10 +125,11 @@ router.patch("/:contactId/favorite", async (req, res, next) => {
   }
 });
 
-router.delete("/:contactId", async (req, res, next) => {
+router.delete("/:contactId", authenticate, async (req, res, next) => {
   try {
+    const { _id } = req.user;
     const { contactId } = req.params;
-    const deleteContact = await Contact.findByIdAndRemove(contactId);
+    const deleteContact = await Contact.findOneAndRemove({ owner: _id, _id: contactId });
 
     if (!deleteContact) {
       throw new NotFound();
