@@ -7,6 +7,8 @@ const authenticate = require("../../middlewares/authenticate");
 router.get("/", authenticate, async (req, res, next) => {
   try {
     const { _id } = req.user;
+    const { page = 1, limit = 10 } = req.query;
+    const skip = (page - 1) * limit;
 
     if (req.query?.favorite) {
       const { favorite } = req.query;
@@ -18,7 +20,10 @@ router.get("/", authenticate, async (req, res, next) => {
       return;
     }
 
-    const contacts = await Contact.find({ owner: _id }, "-createdAt -updatedAt");
+    const contacts = await Contact.find({ owner: _id }, "-createdAt -updatedAt", {
+      skip,
+      limit: +limit,
+    });
     res.json(contacts);
   } catch (error) {
     next(error);
