@@ -132,8 +132,11 @@ router.patch("/", authenticate, async (req, res, next) => {
 });
 
 router.patch("/avatars", authenticate, upload.single("avatar"), async (req, res, next) => {
-  const { path: tempUpload, filename } = req.file;
   try {
+    if (!req.file) {
+      throw new BadRequest("No files attached");
+    }
+    const { path: tempUpload, filename } = req.file;
     await resize(tempUpload);
 
     const [extension] = filename.split(".").reverse();
@@ -149,7 +152,10 @@ router.patch("/avatars", authenticate, upload.single("avatar"), async (req, res,
     if (error.message.includes("Unsupported MIME type")) {
       error.status = 400;
     }
-    await fs.unlink(tempUpload);
+    if (req.file) {
+      await fs.unlink(req.file.path);
+    }
+
     next(error);
   }
 });
