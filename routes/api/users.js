@@ -1,13 +1,25 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const path = require("path");
+const fs = require("fs/promises");
+
 const { BadRequest, Conflict, Unauthorized, NotFound } = require("http-errors");
 const { User, joiSchema, joiSubscriptionSchema } = require("../../model/user");
 const authenticate = require("../../middlewares/authenticate");
+const upload = require("../../middlewares/upload");
+const gravatar = require("gravatar");
+const Jimp = require("jimp");
 
 const router = express.Router();
-
 const { SECRET_KEY } = process.env;
+
+const avatarsDir = path.join(__dirname, "../../", "public", "avatars");
+
+const resize = async (filepath) => {
+  const avatar = await Jimp.read(filepath);
+  avatar.resize(250, 250).write(filepath);
+};
 
 router.post("/signup", async (req, res, next) => {
   try {
@@ -25,7 +37,8 @@ router.post("/signup", async (req, res, next) => {
 
     const salt = await bcrypt.genSalt(10);
     const hashPassword = await bcrypt.hash(password, salt);
-    const newUser = await User.create({ email, password: hashPassword });
+    const avatarURL = gravatar.url(email);
+    const newUser = await User.create({ email, password: hashPassword, avatarURL });
     res.status(201).json({
       user: {
         email: newUser.email,
@@ -98,14 +111,7 @@ router.patch("/", authenticate, async (req, res, next) => {
     const { _id, email } = req.user;
     const { subscription } = req.body;
 
-    const user = await User.findByIdAndUpdate(
-      _id,
-      { subscription },
-      {
-        new: true,
-        fields: "subscription",
-      }
-    );
+    const user = await User.findByIdAndUpdate(_id, { subscription }, { new: true });
 
     if (!user) {
       throw new NotFound();
@@ -121,6 +127,35 @@ router.patch("/", authenticate, async (req, res, next) => {
     if (error.message.includes("Cast to ObjectId failed")) {
       error.status = 404;
     }
+    next(error);
+  }
+});
+
+router.patch("/avatars", authenticate, upload.single("avatar"), async (req, res, next) => {
+  try {
+    if (!req.file) {
+      throw new BadRequest("No files attached");
+    }
+    const { path: tempUpload, filename } = req.file;
+    await resize(tempUpload);
+
+    const [extension] = filename.split(".").reverse();
+    const newFileName = `${req.user._id}.${extension}`;
+    const fileUpload = path.join(avatarsDir, newFileName);
+
+    await fs.rename(tempUpload, fileUpload);
+    const avatarURL = path.join("avatars", newFileName);
+
+    await User.findByIdAndUpdate(req.user._id, { avatarURL }, { new: true });
+    res.json({ avatarURL });
+  } catch (error) {
+    if (error.message.includes("Unsupported MIME type")) {
+      error.status = 400;
+    }
+    if (req.file) {
+      await fs.unlink(req.file.path);
+    }
+
     next(error);
   }
 });
