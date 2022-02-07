@@ -2,8 +2,7 @@ const path = require("path");
 const fs = require("fs/promises");
 const Jimp = require("jimp");
 const { BadRequest } = require("http-errors");
-
-const { User } = require("../../model/user");
+const { uploadAvatar } = require("../../services/users/usersService");
 
 const avatarsDir = path.join(__dirname, "../../", "public", "avatars");
 
@@ -12,7 +11,7 @@ const resize = async (filepath) => {
   avatar.resize(250, 250).write(filepath);
 };
 
-const uploadAvatar = async (req, res, next) => {
+const uploadAvatarController = async (req, res, next) => {
   try {
     if (!req.file) {
       throw new BadRequest("No files attached");
@@ -27,7 +26,7 @@ const uploadAvatar = async (req, res, next) => {
     await fs.rename(tempUpload, fileUpload);
     const avatarURL = path.join("avatars", newFileName);
 
-    await User.findByIdAndUpdate(req.user._id, { avatarURL }, { new: true });
+    await uploadAvatar(req.user._id, avatarURL);
     res.json({ avatarURL });
   } catch (error) {
     if (error.message.includes("Unsupported MIME type")) {
@@ -41,4 +40,4 @@ const uploadAvatar = async (req, res, next) => {
   }
 };
 
-module.exports = uploadAvatar;
+module.exports = uploadAvatarController;

@@ -1,19 +1,19 @@
-const signup = require("./signup");
-const verify = require("./verify");
-const requestVerify = require("./requestVerify");
-const login = require("./login");
-const updateSubscription = require("./updateSubscription");
-const uploadAvatar = require("./uploadAvatar");
+const signupController = require("./signup");
+const verifyController = require("./verify");
+const requestVerifyController = require("./requestVerify");
+const loginController = require("./login");
+const updateSubscriptionController = require("./updateSubscription");
+const uploadAvatarController = require("./uploadAvatar");
 const getUser = require("./getUser");
-const logout = require("./logout");
+const logoutController = require("./logout");
 
 module.exports = {
-  signup,
-  verify,
-  requestVerify,
-  login,
-  updateSubscription,
-  uploadAvatar,
+  signupController,
+  verifyController,
+  requestVerifyController,
+  loginController,
+  updateSubscriptionController,
+  uploadAvatarController,
   getUser,
-  logout,
+  logoutController,
 };

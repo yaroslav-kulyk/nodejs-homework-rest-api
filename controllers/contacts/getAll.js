@@ -1,4 +1,5 @@
 const { Contact } = require("../../model/contact");
+const { getContacts } = require("../../services/contacts/contactsService");
 
 const getAll = async (req, res, next) => {
   try {
@@ -16,10 +17,11 @@ const getAll = async (req, res, next) => {
       return;
     }
 
-    const contacts = await Contact.find({ owner: _id }, "-createdAt -updatedAt", {
-      skip,
-      limit: +limit,
-    });
+    const contacts = await getContacts(_id);
+    // const contacts = await Contact.find({ owner: _id }, "-createdAt -updatedAt", {
+    //   skip,
+    //   limit: +limit,
+    // });
     res.json(contacts);
   } catch (error) {
     next(error);

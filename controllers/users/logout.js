@@ -1,9 +1,13 @@
-const { User } = require("../../model/user");
+const { logout } = require("../../services/users/usersService");
 
-const logout = async (req, res) => {
-  const { _id } = req.user;
-  await User.findByIdAndUpdate(_id, { token: null });
-  res.status(204).send();
+const logoutController = async (req, res, next) => {
+  try {
+    const { _id } = req.user;
+    await logout(_id);
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
 };
 
-module.exports = logout;
+module.exports = logoutController;
