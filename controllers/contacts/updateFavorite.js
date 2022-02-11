@@ -1,5 +1,6 @@
-const { NotFound, BadRequest } = require("http-errors");
-const { Contact, joiFavoriteSchema } = require("../../model/contact");
+const { BadRequest } = require("http-errors");
+const { joiFavoriteSchema } = require("../../model/contact");
+const { updateFavoriteById } = require("../../services/contacts/contactsService");
 
 const updateFavorite = async (req, res, next) => {
   try {
@@ -12,20 +13,8 @@ const updateFavorite = async (req, res, next) => {
     const { contactId } = req.params;
     const { favorite } = req.body;
 
-    const updateContact = await Contact.findOneAndUpdate(
-      { owner: _id, _id: contactId },
-      { favorite },
-      {
-        new: true,
-        fields: "-createdAt -updatedAt",
-      }
-    );
-
-    if (!updateContact) {
-      throw new NotFound();
-    }
-
-    res.json(updateContact);
+    const updateFavorite = await updateFavoriteById(_id, contactId, favorite);
+    res.json(updateFavorite);
   } catch (error) {
     if (error.message.includes("Cast to ObjectId failed")) {
       error.status = 404;

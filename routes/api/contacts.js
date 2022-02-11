@@ -13,15 +13,10 @@ const {
 const router = express.Router();
 
 router.get("/", authenticate, getAll);
-
 router.get("/:contactId", authenticate, getById);
-
 router.post("/", authenticate, add);
-
 router.put("/:contactId", authenticate, updateById);
-
 router.patch("/:contactId/favorite", authenticate, updateFavorite);
-
 router.delete("/:contactId", authenticate, remove);
 
 module.exports = router;

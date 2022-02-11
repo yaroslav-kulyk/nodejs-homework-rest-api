@@ -1,14 +1,10 @@
-const { NotFound } = require("http-errors");
-const { User } = require("../../model/user");
+const { verify } = require("../../services/users/usersService");
 
-const verify = async (req, res, next) => {
+const verifyController = async (req, res, next) => {
   try {
     const { verificationToken } = req.params;
-    const user = await User.findOne({ verificationToken });
-    if (!user) {
-      throw new NotFound("User not found");
-    }
-    await User.findByIdAndUpdate(user._id, { verificationToken: null, verify: true });
+    await verify(verificationToken);
+
     res.json({
       message: "Verification successful",
     });
@@ -17,4 +13,4 @@ const verify = async (req, res, next) => {
   }
 };
 
-module.exports = verify;
+module.exports = verifyController;

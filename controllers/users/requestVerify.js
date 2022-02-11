@@ -1,32 +1,14 @@
-const { BadRequest, NotFound } = require("http-errors");
-const { User } = require("../../model/user");
+const { BadRequest } = require("http-errors");
+const { requestVerify } = require("../../services/users/usersService");
 
-const sendEmail = require("../../helpers/sendEmail");
-
-const { SITE_NAME } = process.env;
-
-const requestVerify = async (req, res, next) => {
+const requestVerifyController = async (req, res, next) => {
   try {
     const { email } = req.body;
     if (!email) {
       throw new BadRequest("missing required field email");
     }
-    const user = await User.findOne({ email });
-    if (!user) {
-      throw new NotFound("User not found");
-    }
-    if (user.verify) {
-      throw new BadRequest("Verification has already been passed");
-    }
 
-    const { verificationToken } = user;
-    const data = {
-      to: email,
-      subject: "Подтвердите email",
-      html: `<a target="_blank" href="${SITE_NAME}/users/verify/${verificationToken}">Подтвердить email</a>`,
-    };
-
-    await sendEmail(data);
+    await requestVerify(email);
 
     res.json({ message: "Verification email sent" });
   } catch (error) {
@@ -34,4 +16,4 @@ const requestVerify = async (req, res, next) => {
   }
 };
 
-module.exports = requestVerify;
+module.exports = requestVerifyController;

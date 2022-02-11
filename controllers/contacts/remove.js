@@ -1,16 +1,11 @@
-const { NotFound } = require("http-errors");
-const { Contact } = require("../../model/contact");
+const { deleteContactById } = require("../../services/contacts/contactsService");
 
 const remove = async (req, res, next) => {
   try {
     const { _id } = req.user;
     const { contactId } = req.params;
-    const deleteContact = await Contact.findOneAndRemove({ owner: _id, _id: contactId });
 
-    if (!deleteContact) {
-      throw new NotFound();
-    }
-
+    await deleteContactById(_id, contactId);
     res.json({ message: "contact deleted" });
   } catch (error) {
     if (error.message.includes("Cast to ObjectId failed")) {

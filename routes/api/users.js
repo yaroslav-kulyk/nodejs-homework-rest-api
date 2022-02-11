@@ -3,32 +3,25 @@ const express = require("express");
 const authenticate = require("../../middlewares/authenticate");
 const upload = require("../../middlewares/upload");
 const {
-  signup,
-  verify,
-  requestVerify,
-  login,
-  updateSubscription,
-  uploadAvatar,
+  signupController,
+  verifyController,
+  requestVerifyController,
+  loginController,
+  updateSubscriptionController,
+  uploadAvatarController,
   getUser,
-  logout,
+  logoutController,
 } = require("../../controllers/users");
 
 const router = express.Router();
 
-router.post("/signup", signup);
-
-router.get("/verify/:verificationToken", verify);
-
-router.post("/verify", requestVerify);
-
-router.post("/login", login);
-
-router.get("/logout", authenticate, logout);
-
+router.post("/signup", signupController);
+router.get("/verify/:verificationToken", verifyController);
+router.post("/verify", requestVerifyController);
+router.post("/login", loginController);
+router.get("/logout", authenticate, logoutController);
 router.get("/current", authenticate, getUser);
-
-router.patch("/", authenticate, updateSubscription);
-
-router.patch("/avatars", authenticate, upload.single("avatar"), uploadAvatar);
+router.patch("/", authenticate, updateSubscriptionController);
+router.patch("/avatars", authenticate, upload.single("avatar"), uploadAvatarController);
 
 module.exports = router;

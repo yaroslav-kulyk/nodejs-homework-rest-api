@@ -1,28 +1,20 @@
-const { BadRequest, NotFound } = require("http-errors");
-const { User, joiSubscriptionSchema } = require("../../model/user");
+const { BadRequest } = require("http-errors");
+const { joiSubscriptionSchema } = require("../../model/user");
 
-const updateSubscription = async (req, res, next) => {
+const { updateSubscription } = require("../../services/users/usersService");
+
+const updateSubscriptionController = async (req, res, next) => {
   try {
     const { error } = joiSubscriptionSchema.validate(req.body);
     if (error) {
       throw new BadRequest(error.message);
     }
 
-    const { _id, email } = req.user;
+    const { _id } = req.user;
     const { subscription } = req.body;
 
-    const user = await User.findByIdAndUpdate(_id, { subscription }, { new: true });
-
-    if (!user) {
-      throw new NotFound();
-    }
-
-    res.json({
-      user: {
-        email,
-        subscription,
-      },
-    });
+    const result = await updateSubscription(_id, subscription);
+    res.json(result);
   } catch (error) {
     if (error.message.includes("Cast to ObjectId failed")) {
       error.status = 404;
@@ -31,4 +23,4 @@ const updateSubscription = async (req, res, next) => {
   }
 };
 
-module.exports = updateSubscription;
+module.exports = updateSubscriptionController;
